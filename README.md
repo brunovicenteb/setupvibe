@@ -1,108 +1,145 @@
 # SetupVibe
 
-> The ultimate cross-platform development environment setup script
+> The ultimate cross-platform development environment setup script — v0.29.1
 
 ## Overview
 
-**SetupVibe** is a comprehensive, automated setup script that transforms your development environment into a powerful, modern workspace. It installs and configures a complete development stack in one command, supporting both macOS and various Linux distributions.
+**SetupVibe** is a comprehensive, automated setup script that transforms your development environment into a powerful, modern workspace. It installs and configures a complete development stack in one command, supporting macOS and major Linux distributions.
 
-Perfect for developers, DevOps engineers, and system administrators who want a fully configured development environment without the hassle of manual setup.
-
-## What Gets Installed
-
-SetupVibe (v2.3) sets up a complete development ecosystem with:
-
-### **Web Development Frameworks**
-- PHP 8.4 & Laravel
-- Ruby & Rails
-- Node.js, Bun & PNPM
-
-### **Programming Languages**
-- Go
-- Rust
-- Python (with `uv` package manager)
-- JavaScript/TypeScript ecosystem
-
-### **DevOps & Containerization**
-- Docker & Docker Compose
-- Ansible
-- GitHub CLI
-
-### **Modern Unix Tools**
-- Latest command-line utilities and productivity tools
-- Network and monitoring tools
-
-### **Shell Configuration**
-- ZSH with advanced configuration
-- Starship prompt (beautiful terminal styling)
+Perfect for developers, DevOps engineers, and system administrators who want a fully configured environment without the hassle of manual setup.
 
 ## System Requirements
 
-### Supported Operating Systems
-- **macOS** 12 and newer
-- **Ubuntu** 24.04+
-- **Debian** 12+
-- **Zorin OS** 18+
-
-### Supported Architectures
-- x86_64 (amd64)
-- ARM64 (aarch64/arm64)
+| | Supported |
+|---|---|
+| **macOS** | 12 Monterey and newer |
+| **Ubuntu** | 24.04+ |
+| **Debian** | 12+ |
+| **Zorin OS** | 18+ |
+| **Linux Mint** | 21+ |
+| **Architectures** | x86_64 (amd64), ARM64 (aarch64) |
 
 ## Installation
 
-Run the following command in your terminal:
-
-#### For your Desktop (BETA)
+### Desktop (macOS & Linux)
 
 ```bash
 curl -sL https://raw.githubusercontent.com/promovaweb/setupvibe/refs/heads/main/desktop.sh | bash
 ```
 
-#### For your Server (BETA)
+### Server (Linux only)
 
 ```bash
 curl -sL https://raw.githubusercontent.com/promovaweb/setupvibe/refs/heads/main/server.sh | bash
 ```
 
-The script will:
-1. Detect your OS and architecture
-2. Install all prerequisites and build tools
-3. Set up each component with proper configuration
-4. Initialize your shell with advanced configurations
-5. Perform cleanup and validation
-
-The entire process may take 20-60 minutes depending on your internet connection and system specifications.
-
-## How It Works
-
-SetupVibe follows a step-by-step installation process:
-
-1. **Prerequisites & Architecture Check** - Validates system compatibility
-2. **Base System & Build Tools** - Installs essential development tools
-3. **Homebrew** - Sets up the package manager (macOS/Linux)
-4. **PHP 8.4 Ecosystem** - Installs PHP and Laravel
-5. **Ruby Ecosystem** - Sets up Ruby and Rails
-6. **Languages** - Installs Go, Rust, Python, and uv
-7. **JavaScript** - Configures Node.js, Bun, and PNPM
-8. **DevOps** - Installs Docker, Ansible, and GitHub CLI
-9. **Modern Unix Tools** - Adds productivity utilities
-10. **Network & Monitoring** - Sets up monitoring tools
-11. **Shell Configuration** - Configures ZSH and Starship
-12. **Finalization & Cleanup** - Validates installation and cleans up
-
-## License
-
-This project is licensed under the **GNU General Public License v3.0** - see the [LICENSE](LICENSE) file for details.
-
-## Credits
-
-**Courtesy:** promovaweb.com  
-**Contact:** contato@promovaweb.com
-
-## Support & Issues
-
-For issues, questions, or contributions, please visit the project repository or contact the development team at contato@promovaweb.com
+> The process takes 20–60 minutes depending on your internet speed and hardware.
 
 ---
 
-**SetupVibe** - Your ultimate development environment, automated. 🚀
+## Desktop Setup — What Gets Installed
+
+**13 steps, fully automated.**
+
+| Step | What it does |
+|---|---|
+| 1. Base System & Build Tools | Essential compilers, curl, git, build-essential |
+| 2. Homebrew | Package manager for macOS and Linux |
+| 3. PHP 8.4 Ecosystem | PHP, Composer, Laravel installer |
+| 4. Ruby Ecosystem | rbenv, Ruby, Bundler, Rails |
+| 5. Languages | Go, Rust, Python + `uv` package manager |
+| 6. JavaScript | Node.js, Bun, PNPM |
+| 7. DevOps | Docker, Docker Compose, Ansible, GitHub CLI |
+| 8. Modern Unix Tools | bat, eza, fd, ripgrep, fzf, zoxide, delta, and more |
+| 9. Network & Monitoring | nmap, htop, Tailscale, and others |
+| 10. SSH Server | OpenSSH server (Linux only) |
+| 11. Shell | ZSH, Oh My Zsh, Starship prompt, tmux + plugins |
+| 12. AI CLI Tools | claude-code, gemini-cli, codex, copilot-cli |
+| 13. Finalization | Cleanup, temp files, cache purge |
+
+---
+
+## Server Setup — What Gets Installed
+
+**10 steps, Linux-only, no desktop or dev language tools.**
+
+| Step | What it does |
+|---|---|
+| 0. Prerequisites | Architecture check, APT preparation |
+| 1. Base System & Build Tools | Essential packages and build tools |
+| 2. Homebrew | Package manager |
+| 3. Docker, Ansible & GitHub CLI | Container runtime and DevOps tools |
+| 4. Modern Unix Tools | CLI productivity utilities via Brew |
+| 5. Network & Monitoring | nmap, htop, Tailscale |
+| 6. SSH Server | OpenSSH server configuration |
+| 7. Shell | ZSH, Oh My Zsh, Starship prompt, tmux + plugins |
+| 8. AI CLI Tools | claude-code, gemini-cli, codex, copilot-cli |
+| 9. Finalization | Cleanup and validation |
+
+---
+
+## Shell Configuration
+
+Each environment gets a dedicated `.zshrc` downloaded from this repository:
+
+| File | Used by |
+|---|---|
+| [`zshrc-macos.zsh`](zshrc-macos.zsh) | desktop.sh on macOS |
+| [`zshrc-linux.zsh`](zshrc-linux.zsh) | desktop.sh on Linux |
+| [`zshrc-server.zsh`](zshrc-server.zsh) | server.sh |
+
+All configs include:
+- Homebrew PATH setup
+- Oh My Zsh with a curated plugin set
+- Starship prompt (Gruvbox Rainbow preset)
+- zoxide, fzf, Rust, Go, Bun, rbenv PATH exports
+- Useful aliases (`d`, `dc`, `art`, `brewup`, `reload`, etc.)
+
+---
+
+## Tmux Configuration
+
+A shared [`tmux.conf`](tmux.conf) is downloaded and applied on both setups.
+
+### Plugins
+
+| Category | Plugin |
+|---|---|
+| Core | tmux-plugins/tpm, tmux-plugins/tmux-sensible |
+| Navigation | tmux-plugins/tmux-pain-control, christoomey/vim-tmux-navigator |
+| Mouse | NHDaly/tmux-better-mouse-mode |
+| Copy & Clipboard | tmux-plugins/tmux-yank, CrispyConductor/tmux-copy-toolkit, abhinav/tmux-fastcopy |
+| URL & Files | tmux-plugins/tmux-open, wfxr/tmux-fzf-url |
+| Sessions | tmux-plugins/tmux-resurrect, tmux-plugins/tmux-continuum, omerxx/tmux-sessionx |
+| Fuzzy Finder | sainnhe/tmux-fzf |
+| UI | Freed-Wu/tmux-digit, anghootys/tmux-ip-address, tmux-plugins/tmux-prefix-highlight, alexwforsythe/tmux-which-key, jaclu/tmux-menus |
+| Theme | 2KAbhishek/tmux2k (onedark, with git/cwd/docker/mise/cpu/ram/network/time) |
+
+After installation, press `prefix + I` inside tmux to install all plugins.
+
+---
+
+## AI CLI Tools
+
+Installed globally via npm on both setups:
+
+| Tool | Package |
+|---|---|
+| Claude Code | `@anthropic-ai/claude-code` |
+| Gemini CLI | `@google/gemini-cli` |
+| OpenAI Codex | `@openai/codex` |
+| GitHub Copilot CLI | `@githubnext/github-copilot-cli` |
+
+---
+
+## License
+
+Licensed under the **GNU General Public License v3.0** — see [LICENSE](LICENSE) for details.
+
+## Credits
+
+Maintained by [promovaweb.com](https://promovaweb.com) · contact@promovaweb.com
+
+---
+
+**SetupVibe** — Your ultimate development environment, automated.
