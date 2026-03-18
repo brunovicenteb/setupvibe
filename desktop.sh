@@ -348,6 +348,41 @@ git_ensure() {
     sudo chown -R $REAL_USER:$(id -gn $REAL_USER) "$dest" 2>/dev/null || true
 }
 
+safe_download() {
+    local url=$1
+    local dest=$2
+    local min_bytes=${3:-100}
+    local tmp
+    tmp=$(mktemp)
+
+    echo "Downloading: $url"
+    if ! curl -fsSL --max-time 30 "$url" -o "$tmp" 2>/dev/null; then
+        echo -e "${RED}✘ Download failed: $url${NC}"
+        rm -f "$tmp"
+        return 1
+    fi
+
+    # Reject empty or suspiciously small files (e.g. GitHub 404 HTML pages)
+    local size
+    size=$(wc -c < "$tmp")
+    if [ "$size" -lt "$min_bytes" ]; then
+        echo -e "${RED}✘ Downloaded file is too small (${size} bytes) — skipping: $dest${NC}"
+        rm -f "$tmp"
+        return 1
+    fi
+
+    # Reject HTML error responses (GitHub returns 200 with HTML on 404)
+    if head -1 "$tmp" | grep -qi "<!doctype\|<html"; then
+        echo -e "${RED}✘ Downloaded file appears to be an HTML error page — skipping: $dest${NC}"
+        rm -f "$tmp"
+        return 1
+    fi
+
+    mv "$tmp" "$dest"
+    echo -e "${GREEN}✔ Downloaded: $dest${NC}"
+    return 0
+}
+
 
 # --- INSTALLATION STEPS ---
 
@@ -869,7 +904,7 @@ step_11() {
         git_ensure "https://github.com/zsh-users/zsh-syntax-highlighting" "$REAL_HOME/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting"
         git_ensure "https://github.com/tmux-plugins/tpm" "$REAL_HOME/.tmux/plugins/tpm"
 
-        curl -fsSL https://raw.githubusercontent.com/promovaweb/setupvibe/main/tmux.conf -o "$REAL_HOME/.tmux.conf"
+        safe_download https://raw.githubusercontent.com/promovaweb/setupvibe/main/tmux.conf "$REAL_HOME/.tmux.conf"
 
         echo "Installing Nerd Fonts (FiraCode & JetBrains Mono)..."
         brew_cmd tap homebrew/cask-fonts 2>/dev/null || true
@@ -885,59 +920,7 @@ step_11() {
         starship preset gruvbox-rainbow -o "$REAL_HOME/.config/starship.toml"
 
         # macOS ZSHRC
-        cat <<EOF > "$REAL_HOME/.zshrc"
-# 1. PATH CONFIGURATION (Must come first!)
-# Homebrew
-if [[ -f "$BREW_PREFIX/bin/brew" ]]; then
-    eval "\$($BREW_PREFIX/bin/brew shellenv)"
-fi
-
-
-# Define PATHs before loading plugins so they can find the tools
-export PATH="\$HOME/.local/bin:\$PATH"
-export PATH="\$HOME/.cargo/bin:\$PATH"
-export PATH="\$HOME/.config/composer/vendor/bin:\$PATH"
-export PATH="\$HOME/.composer/vendor/bin:\$PATH"
-export GOPATH=\$HOME/go
-export PATH=\$PATH:\$GOPATH/bin
-export BUN_INSTALL="\$HOME/.bun"
-export PATH="\$BUN_INSTALL/bin:\$PATH"
-
-
-# 2. INIT TOOLS (Env Setup)
-[ -f "\$HOME/.cargo/env" ] && source "\$HOME/.cargo/env"
-if command -v rbenv >/dev/null; then eval "\$(rbenv init -)"; fi
-
-
-# 3. OH-MY-ZSH CONFIG
-export ZSH="\$HOME/.oh-my-zsh"
-ZSH_THEME="" # Disabled because Starship handles it
-
-
-# Plugins
-plugins=(git rsync cp extract zoxide fzf zsh-autosuggestions zsh-syntax-highlighting brew gh ansible docker docker-compose laravel composer rails ruby python pip node npm bun golang rust macos)
-
-
-source \$ZSH/oh-my-zsh.sh
-
-
-# 4. STARSHIP & ZOXIDE
-if command -v zoxide >/dev/null; then eval "\$(zoxide init zsh)"; fi
-if command -v starship >/dev/null; then eval "\$(starship init zsh)"; fi
-
-
-# 5. ALIASES
-alias zconfig="nano ~/.zshrc"
-alias reload="source ~/.zshrc"
-alias update="brew update && brew upgrade"
-alias d="docker"
-alias dc="docker compose"
-alias art="php artisan"
-alias brewup="brew update && brew upgrade && brew cleanup"
-
-
-# 6. SILENT LOAD (No echo messages)
-EOF
+        safe_download https://raw.githubusercontent.com/promovaweb/setupvibe/main/zshrc-macos.zsh "$REAL_HOME/.zshrc"
     else
         sudo apt-get install -y zsh
 
@@ -949,7 +932,7 @@ EOF
         git_ensure "https://github.com/zsh-users/zsh-syntax-highlighting" "$REAL_HOME/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting"
         git_ensure "https://github.com/tmux-plugins/tpm" "$REAL_HOME/.tmux/plugins/tpm"
 
-        curl -fsSL https://raw.githubusercontent.com/promovaweb/setupvibe/main/tmux.conf -o "$REAL_HOME/.tmux.conf"
+        safe_download https://raw.githubusercontent.com/promovaweb/setupvibe/main/tmux.conf "$REAL_HOME/.tmux.conf"
 
         echo "Installing Nerd Fonts (FiraCode & JetBrains Mono)..."
         mkdir -p "$REAL_HOME/.local/share/fonts"
@@ -971,61 +954,7 @@ EOF
 
 
         # Linux ZSHRC
-        cat <<EOF > "$REAL_HOME/.zshrc"
-# 1. PATH CONFIGURATION (Must come first!)
-# Homebrew
-if [ -f "/home/linuxbrew/.linuxbrew/bin/brew" ]; then
-    eval "\$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-elif [ -f "\$HOME/.linuxbrew/bin/brew" ]; then
-    eval "\$(\$HOME/.linuxbrew/bin/brew shellenv)"
-fi
-
-
-# Define PATHs before loading plugins so they can find the tools
-export PATH="\$HOME/.local/bin:\$PATH"
-export PATH="\$HOME/.cargo/bin:\$PATH"
-export PATH="\$HOME/.config/composer/vendor/bin:\$PATH"
-export PATH=\$PATH:/usr/local/go/bin
-export GOPATH=\$HOME/go
-export PATH=\$PATH:\$GOPATH/bin
-export BUN_INSTALL="\$HOME/.bun"
-export PATH="\$BUN_INSTALL/bin:\$PATH"
-export PATH="\$HOME/.rbenv/bin:\$PATH"
-
-
-# 2. INIT TOOLS (Env Setup)
-[ -f "\$HOME/.cargo/env" ] && source "\$HOME/.cargo/env"
-if command -v rbenv >/dev/null; then eval "\$(rbenv init -)"; fi
-
-
-# 3. OH-MY-ZSH CONFIG
-export ZSH="\$HOME/.oh-my-zsh"
-ZSH_THEME="" # Disabled because Starship handles it
-
-
-# Plugins
-plugins=(git rsync nmap cp extract zoxide fzf zsh-autosuggestions zsh-syntax-highlighting tmux brew gh ansible docker docker-compose laravel composer rails ruby python pip node npm bun golang rust)
-
-
-source \$ZSH/oh-my-zsh.sh
-
-
-# 4. STARSHIP & ZOXIDE
-if command -v zoxide >/dev/null; then eval "\$(zoxide init zsh)"; fi
-if command -v starship >/dev/null; then eval "\$(starship init zsh)"; fi
-
-
-# 5. ALIASES
-alias zconfig="nano ~/.zshrc"
-alias reload="source ~/.zshrc"
-alias update="sudo apt update && sudo apt upgrade"
-alias d="docker"
-alias dc="docker compose"
-alias art="php artisan"
-
-
-# 6. SILENT LOAD (No echo messages)
-EOF
+        safe_download https://raw.githubusercontent.com/promovaweb/setupvibe/main/zshrc-linux.zsh "$REAL_HOME/.zshrc"
         sudo chown $REAL_USER:$REAL_USER "$REAL_HOME/.zshrc"
 
         if [ "$SHELL" != "/bin/zsh" ] && [ "$SHELL" != "/usr/bin/zsh" ]; then

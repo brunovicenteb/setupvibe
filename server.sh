@@ -258,6 +258,41 @@ git_ensure() {
     sudo chown -R $REAL_USER:$(id -gn $REAL_USER) "$dest" 2>/dev/null || true
 }
 
+safe_download() {
+    local url=$1
+    local dest=$2
+    local min_bytes=${3:-100}
+    local tmp
+    tmp=$(mktemp)
+
+    echo "Downloading: $url"
+    if ! curl -fsSL --max-time 30 "$url" -o "$tmp" 2>/dev/null; then
+        echo -e "${RED}✘ Download failed: $url${NC}"
+        rm -f "$tmp"
+        return 1
+    fi
+
+    # Reject empty or suspiciously small files (e.g. GitHub 404 HTML pages)
+    local size
+    size=$(wc -c < "$tmp")
+    if [ "$size" -lt "$min_bytes" ]; then
+        echo -e "${RED}✘ Downloaded file is too small (${size} bytes) — skipping: $dest${NC}"
+        rm -f "$tmp"
+        return 1
+    fi
+
+    # Reject HTML error responses (GitHub returns 200 with HTML on 404)
+    if head -1 "$tmp" | grep -qi "<!doctype\|<html"; then
+        echo -e "${RED}✘ Downloaded file appears to be an HTML error page — skipping: $dest${NC}"
+        rm -f "$tmp"
+        return 1
+    fi
+
+    mv "$tmp" "$dest"
+    echo -e "${GREEN}✔ Downloaded: $dest${NC}"
+    return 0
+}
+
 
 # --- INSTALLATION STEPS ---
 
@@ -498,7 +533,7 @@ step_7() {
     git_ensure "https://github.com/zsh-users/zsh-syntax-highlighting" "$REAL_HOME/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting"
     git_ensure "https://github.com/tmux-plugins/tpm" "$REAL_HOME/.tmux/plugins/tpm"
 
-    curl -fsSL https://raw.githubusercontent.com/promovaweb/setupvibe/main/tmux.conf -o "$REAL_HOME/.tmux.conf"
+    safe_download https://raw.githubusercontent.com/promovaweb/setupvibe/main/tmux.conf "$REAL_HOME/.tmux.conf"
 
     echo "Configuring Starship..."
     curl -sS https://starship.rs/install.sh | sudo sh -s -- -y
@@ -508,49 +543,7 @@ step_7() {
     sudo -u $REAL_USER starship preset gruvbox-rainbow -o "$REAL_HOME/.config/starship.toml"
 
     # Server ZSHRC
-    cat <<EOF > "$REAL_HOME/.zshrc"
-# 1. PATH CONFIGURATION (Must come first!)
-# Homebrew
-if [ -f "/home/linuxbrew/.linuxbrew/bin/brew" ]; then
-    eval "\$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-elif [ -f "\$HOME/.linuxbrew/bin/brew" ]; then
-    eval "\$(\$HOME/.linuxbrew/bin/brew shellenv)"
-fi
-
-export PATH="\$HOME/.local/bin:\$PATH"
-export BUN_INSTALL="\$HOME/.bun"
-
-
-# 2. OH-MY-ZSH CONFIG
-export ZSH="\$HOME/.oh-my-zsh"
-ZSH_THEME="" # Disabled because Starship handles it
-
-# Plugins
-plugins=(git rsync nmap cp extract zoxide fzf zsh-autosuggestions zsh-syntax-highlighting tmux brew gh ansible docker docker-compose)
-
-source \$ZSH/oh-my-zsh.sh
-
-
-# 3. STARSHIP & ZOXIDE
-if command -v zoxide >/dev/null; then eval "\$(zoxide init zsh)"; fi
-if command -v starship >/dev/null; then eval "\$(starship init zsh)"; fi
-
-
-# 4. ALIASES
-alias zconfig="nano ~/.zshrc"
-alias reload="source ~/.zshrc"
-alias update="sudo apt update && sudo apt upgrade"
-alias d="docker"
-alias dc="docker compose"
-alias brewup="brew update && brew upgrade && brew cleanup"
-alias syslog="sudo journalctl -f"
-alias ports="ss -tulnp"
-alias meminfo="free -h"
-alias diskinfo="df -h"
-alias cpuinfo="lscpu"
-alias wholistening="ss -tulnp"
-EOF
-
+    safe_download https://raw.githubusercontent.com/promovaweb/setupvibe/main/zshrc-server.zsh "$REAL_HOME/.zshrc"
     sudo chown $REAL_USER:$REAL_USER "$REAL_HOME/.zshrc"
 
     if [ "$SHELL" != "/bin/zsh" ] && [ "$SHELL" != "/usr/bin/zsh" ]; then
