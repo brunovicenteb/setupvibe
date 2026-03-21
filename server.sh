@@ -59,14 +59,10 @@ echo -e "${YELLOW}Preparing APT environment...${NC}"
 # Ensure keyrings directory exists
 sys_do mkdir -p -m 755 /etc/apt/keyrings
 
-# Selective cleanup of keyrings this script manages
-for key in docker.gpg charm.gpg githubcli-archive-keyring.gpg ansible.gpg; do
-    sys_do rm -f "/etc/apt/keyrings/$key" 2>/dev/null || true
-done
-
-# Remove third-party repos managed by this script
+# Remove third-party repos managed by this script to ensure we start from a clean state
+# This prevents the signature verification error if the keys were deleted but the lists remained
 sys_do grep -rl 'docker\|nodesource\|charm\.sh\|cli\.github\|ansible\|codeiumdata\|windsurf\|antigravity\|pkg\.dev' \
-    /etc/apt/sources.list.d/ 2>/dev/null | xargs sys_do rm -f 2>/dev/null || true
+    /etc/apt/sources.list.d/ 2>/dev/null | xargs -I {} sys_do rm -f "{}" 2>/dev/null || true
 
 # Clean APT cache if we are root
 if [[ "$(id -u)" -eq 0 ]]; then

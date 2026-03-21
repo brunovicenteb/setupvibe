@@ -59,36 +59,18 @@ if [[ "$(uname -s)" == "Linux" ]]; then
     # Ensure keyrings directory exists
     sys_do mkdir -p -m 755 /etc/apt/keyrings
     
-    # Selective cleanup of keyrings this script manages
-    for key in docker.gpg nodesource.gpg charm.gpg githubcli-archive-keyring.gpg ansible.gpg; do
-        sys_do rm -f "/etc/apt/keyrings/$key" 2>/dev/null || true
-    done
-    
-    # Remove legacy sury key from old path
+    # Remove only legacy/old paths that are definitely not used anymore
     sys_do rm -f /usr/share/keyrings/deb.sury.org-php.gpg 2>/dev/null || true
     
-    # Remove third-party repos managed by this script
-    sys_do grep -rl 'docker\|nodesource\|charm\.sh\|cli\.github\|sury\|ondrej\|ansible\|codeiumdata\|windsurf\|antigravity\|pkg\.dev' \
-        /etc/apt/sources.list.d/ 2>/dev/null | xargs sys_do rm -f 2>/dev/null || true
-    
-    # Clean APT cache if requested or if we are root
-    if [[ "$(id -u)" -eq 0 ]]; then
-        sys_do apt-get clean -qq
-    fi
-
-    # --- WAIT FOR APT LOCK ---
-    echo -e "${YELLOW}Checking apt lock...${NC}"
-    for i in $(seq 1 10); do
-        if ! sys_do fuser /var/lib/apt/lists/lock /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock >/dev/null 2>&1; then
-            break
-        fi
-        echo -e "${YELLOW}  apt lock held, waiting... (${i}/10)${NC}"
-        sleep 2
-    done
-
     # --- ENSURE BASE TOOLS ---
     echo -e "${YELLOW}Ensuring base tools (gpg, curl, ca-certificates)...${NC}"
     export DEBIAN_FRONTEND=noninteractive
+    
+    # If we have errors in APT, we try to fix them by removing potentially broken lists managed by this script
+    # This prevents the error you saw: signature verification failed because keys were deleted
+    sys_do grep -rl 'docker\|nodesource\|charm\.sh\|cli\.github\|sury\|ondrej\|ansible\|codeiumdata\|windsurf\|antigravity\|pkg\.dev' \
+        /etc/apt/sources.list.d/ 2>/dev/null | xargs -I {} sys_do rm -f "{}" 2>/dev/null || true
+
     sys_do apt-get update -y -qq
     sys_do apt-get install -y -q gnupg gnupg2 curl ca-certificates lsb-release software-properties-common apt-transport-https
     
