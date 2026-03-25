@@ -114,9 +114,7 @@ fi
 STEPS=(
     "SetupVibe: Prerequisites & Arch Check"
     "Base System & Build Tools"
-    "Homebrew (Package Manager)"
     "Docker, Ansible & GitHub CLI"
-    "Modern Unix Tools (Via Brew)"
     "Network, Monitoring & Tailscale"
     "SSH Server"
     "Shell (ZSH & Starship Config)"
@@ -145,13 +143,6 @@ elif [[ "$(id -u)" -eq 0 ]]; then
     fi
 else
     REAL_USER=$(whoami)
-fi
-# Last resort: if still root, detect from Homebrew installation ownership
-if [[ "$REAL_USER" == "root" && -d "/home/linuxbrew/.linuxbrew" ]]; then
-    _BREW_OWNER=$(stat -c '%U' /home/linuxbrew/.linuxbrew 2>/dev/null)
-    if [[ -n "$_BREW_OWNER" && "$_BREW_OWNER" != "root" ]]; then
-        REAL_USER="$_BREW_OWNER"
-    fi
 fi
 REAL_HOME=$(getent passwd "$REAL_USER" 2>/dev/null | cut -d: -f6)
 [[ -z "$REAL_HOME" ]] && REAL_HOME="$HOME"
@@ -186,8 +177,6 @@ else
     exit 1
 fi
 
-BREW_PREFIX="/home/linuxbrew/.linuxbrew"
-
 
 # --- INSTALL FIGLET & GIT ---
 sys_do apt-get install -y figlet git >/dev/null 2>&1 || sys_do apt-get install -y --fix-missing figlet git >/dev/null
@@ -215,14 +204,6 @@ install_key() {
     fi
     echo -e "${RED}✘ Failed to install key from $url${NC}"
     return 1
-}
-
-brew_cmd() {
-    if [[ "$(id -u)" -eq 0 && -n "$REAL_USER" && "$REAL_USER" != "root" ]]; then
-        ( cd "$REAL_HOME" && runuser -u "$REAL_USER" -- env HOME="$REAL_HOME" "$BREW_PREFIX/bin/brew" "$@" )
-    else
-        "$BREW_PREFIX/bin/brew" "$@"
-    fi
 }
 
 header() {
@@ -398,99 +379,14 @@ step_1() {
         user_do bash -c "export PATH=\$HOME/.local/bin:\$PATH; uv self update"
     fi
     export PATH="$REAL_HOME/.local/bin:$PATH"
-
-    # Adding Charmbracelet Repo (needed for Glow)
-    install_key "https://repo.charm.sh/apt/gpg.key" "/etc/apt/keyrings/charm.gpg"
-    echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sys_do tee /etc/apt/sources.list.d/charm.list
-    sys_do apt-get update -qq
 }
 
 
 step_2() {
-    echo "Checking Homebrew installation..."
-    if [ ! -d "/home/linuxbrew/.linuxbrew" ] && [ ! -d "$REAL_HOME/.linuxbrew" ]; then
-        echo "Installing Homebrew..."
-        sys_do apt-get install -y build-essential procps curl file git
-
-        # Ensure /home/linuxbrew directory exists with proper permissions
-        echo "Ensuring /home/linuxbrew permissions..."
-        sys_do mkdir -p /home/linuxbrew
-        sys_do chown -R "$REAL_USER" /home/linuxbrew 2>/dev/null || true
-        sys_do chmod -R 775 /home/linuxbrew 2>/dev/null || true
-        
-        # Pre-create .linuxbrew to help the installer
-        sys_do mkdir -p /home/linuxbrew/.linuxbrew
-        sys_do chown -R "$REAL_USER" /home/linuxbrew/.linuxbrew 2>/dev/null || true
-
-        # Temporarily allow REAL_USER to use sudo without password for Homebrew installation
-        # This is required because the installer checks for sudo even in non-interactive mode
-        if [[ "$REAL_USER" != "root" ]]; then
-            echo "Temporarily allowing $REAL_USER to use sudo without password for Homebrew installation..."
-            echo "$REAL_USER ALL=(ALL) NOPASSWD:ALL" | sys_do tee /etc/sudoers.d/setupvibe-brew > /dev/null
-            sys_do chmod 440 /etc/sudoers.d/setupvibe-brew
-        fi
-
-        # Install Homebrew
-        if [[ "$REAL_USER" == "root" ]]; then
-            echo -e "${RED}✘ Homebrew cannot be installed as root. Skipping.${NC}"
-        else
-            # Run installer as REAL_USER
-            user_do NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        fi
-
-        # Cleanup temporary sudoers rule
-        sys_do rm -f /etc/sudoers.d/setupvibe-brew
-    else
-        echo "Homebrew already installed. Checking for updates..."
-        local BREW_EXEC="/home/linuxbrew/.linuxbrew/bin/brew"
-        [ ! -f "$BREW_EXEC" ] && BREW_EXEC="$REAL_HOME/.linuxbrew/bin/brew"
-
-        if [ -f "$BREW_EXEC" ]; then
-            brew_cmd update
-        fi
-    fi
-
-    # Configure Homebrew PATH in shell profiles
-    echo "Configuring Homebrew PATH in shell profiles..."
-    for CONFIG_FILE in "$REAL_HOME/.bashrc" "$REAL_HOME/.profile" "$REAL_HOME/.zshrc"; do
-        if [ ! -f "$CONFIG_FILE" ]; then
-            user_do touch "$CONFIG_FILE"
-        fi
-
-        if ! grep -q "linuxbrew" "$CONFIG_FILE"; then
-            echo -e "\n# Homebrew Configuration" | user_do tee -a "$CONFIG_FILE" > /dev/null
-            echo 'if [ -d "/home/linuxbrew/.linuxbrew" ]; then eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"; fi' | user_do tee -a "$CONFIG_FILE" > /dev/null
-            echo 'if [ -d "$HOME/.linuxbrew" ]; then eval "$($HOME/.linuxbrew/bin/brew shellenv)"; fi' | user_do tee -a "$CONFIG_FILE" > /dev/null
-            echo -e "${GREEN}✔ Added Homebrew to $CONFIG_FILE${NC}"
-        fi
-    done
-
-    # Load brew environment for this script session
-    echo "Loading Homebrew environment for current session..."
-    if [ -f "/home/linuxbrew/.linuxbrew/bin/brew" ]; then
-        eval "$(cd "$REAL_HOME" && runuser -u "$REAL_USER" -- env HOME="$REAL_HOME" /home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null)"
-        export PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:$PATH"
-    elif [ -f "$REAL_HOME/.linuxbrew/bin/brew" ]; then
-        eval "$(cd "$REAL_HOME" && runuser -u "$REAL_USER" -- env HOME="$REAL_HOME" "$REAL_HOME/.linuxbrew/bin/brew" shellenv 2>/dev/null)"
-        export PATH="$REAL_HOME/.linuxbrew/bin:$REAL_HOME/.linuxbrew/sbin:$PATH"
-    fi
-
-    if command -v brew &>/dev/null; then
-        echo -e "${GREEN}✔ Homebrew is ready and available in PATH.${NC}"
-        echo "Upgrading existing Homebrew packages..."
-        brew_cmd upgrade
-    else
-        echo -e "${RED}✘ Homebrew installation failed or brew not found in PATH.${NC}"
-        return 1
-    fi
-}
-
-
-step_3() {
     # Docker Strategy
     echo "Configuring Docker..."
     DOCKER_CODENAME="$DISTRO_CODENAME"
-    
+
     if $IS_UBUNTU; then
         echo "Using Ubuntu Docker Strategy..."
     elif $IS_DEBIAN; then
@@ -502,7 +398,7 @@ step_3() {
 
     install_key "https://download.docker.com/linux/$DISTRO_ID/gpg" "/etc/apt/keyrings/docker.gpg"
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/$DISTRO_ID $DOCKER_CODENAME stable" | sys_do tee /etc/apt/sources.list.d/docker.list
-    
+
     sys_do apt-get update -qq
     sys_do apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin docker-buildx-plugin
     sys_do usermod -aG docker "$REAL_USER"
@@ -528,29 +424,7 @@ step_3() {
 }
 
 
-step_4() {
-    echo "Installing Modern Unix Tools via Homebrew..."
-    TOOLS="bat eza zoxide fzf ripgrep fd lazygit lazydocker neovim glow jq tldr fastfetch duf bandwhich gping trippy node@24 mise"
-
-    if ! command -v brew &>/dev/null; then
-        echo -e "${RED}Error: Homebrew binary not found. Skipping modern tools installation.${NC}"
-        return 1
-    fi
-
-    brew_cmd install $TOOLS || brew_cmd upgrade $TOOLS
-    brew_cmd link node@24 --force --overwrite 2>/dev/null || true
-
-    # FZF keybindings
-    local FZF_OPT="/home/linuxbrew/.linuxbrew/opt/fzf"
-    [ ! -d "$FZF_OPT" ] && FZF_OPT="$REAL_HOME/.linuxbrew/opt/fzf"
-    if [ -d "$FZF_OPT" ]; then
-        user_do "$FZF_OPT/install" --all --no-bash --no-fish > /dev/null 2>&1
-    fi
-
-}
-
-
-step_5() {
+step_3() {
     echo "Installing Network & Monitoring Tools (APT)..."
     sys_do apt-get install -y \
         rsync net-tools dnsutils mtr-tiny nmap tcpdump \
@@ -574,7 +448,7 @@ step_5() {
 }
 
 
-step_6() {
+step_4() {
     echo "Setting up SSH Server..."
 
     if ! command -v sshd &> /dev/null; then
@@ -614,7 +488,7 @@ step_6() {
 }
 
 
-step_7() {
+step_5() {
     sys_do apt-get install -y zsh
 
     if [ ! -d "$REAL_HOME/.oh-my-zsh" ]; then
@@ -644,7 +518,7 @@ step_7() {
 }
 
 
-step_8() {
+step_6() {
     echo "Installing TPM (Tmux Plugin Manager)..."
     git_ensure "https://github.com/tmux-plugins/tpm" "$REAL_HOME/.tmux/plugins/tpm"
 
@@ -667,12 +541,18 @@ step_8() {
 }
 
 
-step_9() {
-    local NPM_BIN
-    NPM_BIN=$(command -v npm 2>/dev/null || echo "$BREW_PREFIX/bin/npm")
+step_7() {
+    echo "Installing Node.js 24 via NodeSource..."
+    install_key "https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key" "/etc/apt/keyrings/nodesource.gpg"
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_24.x nodistro main" | sys_do tee /etc/apt/sources.list.d/nodesource.list
+    sys_do apt-get update -qq
+    sys_do apt-get install -y nodejs
 
-    if [ ! -f "$NPM_BIN" ]; then
-        echo -e "${YELLOW}⚠ npm not found — skipping AI CLI Tools.${NC}"
+    local NPM_BIN
+    NPM_BIN=$(command -v npm 2>/dev/null)
+
+    if [ -z "$NPM_BIN" ]; then
+        echo -e "${RED}✘ npm not found after Node.js installation — skipping AI CLI Tools.${NC}"
         return 1
     fi
 
@@ -698,7 +578,7 @@ step_9() {
 }
 
 
-step_10() {
+step_8() {
     echo "Cleaning APT cache and orphaned packages..."
     sys_do apt-get autoremove -y -qq
     sys_do apt-get autoclean -qq
@@ -782,8 +662,6 @@ run_section 5 step_5
 run_section 6 step_6
 run_section 7 step_7
 run_section 8 step_8
-run_section 9 step_9
-run_section 10 step_10
 
 
 # --- FINALIZATION ---
