@@ -62,13 +62,13 @@ Subset of desktop steps — no language ecosystems (PHP, Ruby, Python, Go, Rust,
 
 Configuration files deployed by the scripts to the user's home directory:
 
-| File | Deployed to | Purpose |
-|---|---|---|
-| `tmux.conf` | `~/.tmux.conf` | Tmux with TPM; 20+ plugins, onedark theme, mouse support, session persistence |
-| `zshrc-macos.zsh` | `~/.zshrc` (macOS) | Homebrew, Cargo, Composer, Go, Bun, rbenv paths |
-| `zshrc-linux.zsh` | `~/.zshrc` (Linux desktop) | Linuxbrew paths, NPM, system aliases |
-| `zshrc-server.zsh` | `~/.zshrc` (server) | Server-specific shell config |
-| `ecosystem.config.js` | Used with PM2 | PM2 config for two app processes |
+| File                  | Deployed to                | Purpose                                                                       |
+| --------------------- | -------------------------- | ----------------------------------------------------------------------------- |
+| `tmux.conf`           | `~/.tmux.conf`             | Tmux with TPM; 20+ plugins, onedark theme, mouse support, session persistence |
+| `zshrc-macos.zsh`     | `~/.zshrc` (macOS)         | Homebrew, Cargo, Composer, Go, Bun, rbenv paths                               |
+| `zshrc-linux.zsh`     | `~/.zshrc` (Linux desktop) | Linuxbrew paths, NPM, system aliases                                          |
+| `zshrc-server.zsh`    | `~/.zshrc` (server)        | Server-specific shell config                                                  |
+| `ecosystem.config.js` | Used with PM2              | PM2 config for two app processes                                              |
 
 ## Key Scripting Patterns
 
