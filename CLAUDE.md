@@ -54,9 +54,9 @@ Both `desktop.sh` and `server.sh` follow a numbered-step pattern (functions pref
 13. AI CLI tools (includes n8n)
 14. Finalization & cleanup
 
-### `server.sh` Steps (11)
+### `server.sh` Steps (9)
 
-Subset of desktop steps — no language ecosystems (PHP, Ruby, Python, Go, Rust, Node) or desktop-specific tools. Focus on base tools, Homebrew, Docker, Ansible, shell, tmux, monitoring, and AI CLIs.
+Subset of desktop steps — no Homebrew, no language ecosystems (PHP, Ruby, Python, Go, Rust) or desktop-specific tools. Node.js is installed via NodeSource APT repo. Focus on base tools, Docker, Ansible, shell, tmux, monitoring, and AI CLIs.
 
 ### `conf/` Directory
 
@@ -86,8 +86,7 @@ REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
 **Architecture detection**:
 
 ```bash
-ARCH=$(uname -m)  # x86_64 or aarch64
-BREW_PREFIX=$([[ "$ARCH" == "aarch64" ]] && echo "/home/linuxbrew/.linuxbrew" || echo "/home/linuxbrew/.linuxbrew")
+ARCH_RAW=$(dpkg --print-architecture)  # amd64 or arm64
 ```
 
 ## Versioning
