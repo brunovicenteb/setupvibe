@@ -40,6 +40,8 @@ if command -v starship >/dev/null; then eval "$(starship init zsh)"; fi
 
 
 # 5. ALIASES
+alias ge="gemini --approval-mode=yolo"
+alias cc="claude --permission-mode=auto --dangerously-skip-permissions"
 alias zconfig="nano ~/.zshrc"
 alias reload="source ~/.zshrc"
 alias update="sudo apt update && sudo apt upgrade"
