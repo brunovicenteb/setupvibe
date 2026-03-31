@@ -24,7 +24,7 @@ NC='\033[0m' # No Color
 
 
 # --- VERSION ---
-VERSION="0.38.0"
+VERSION="0.39.0"
 INSTALL_URL="https://desktop.setupvibe.dev"
 
 echo -e "${CYAN}SetupVibe Desktop v${VERSION}${NC}"
@@ -626,8 +626,9 @@ step_4() {
         
         echo "Checking Ruby 3.3.0..."
         if ! user_do rbenv versions --bare | grep -q "^3.3.0$"; then
-            echo "Compiling Ruby 3.3.0..."
-            user_do rbenv install 3.3.0
+            echo "Compiling Ruby 3.3.0 (this may take a few minutes)..."
+            # Optimization: Skip documentation and use parallel compilation
+            user_do bash -c "export RUBY_CONFIGURE_OPTS='--disable-install-doc'; export MAKE_OPTS='-j\$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)'; rbenv install 3.3.0"
             user_do rbenv global 3.3.0
         fi
         
@@ -648,8 +649,9 @@ step_4() {
 
         echo "Checking Ruby 3.3.0..."
         if ! user_do bash -c 'export PATH="$HOME/.rbenv/bin:$PATH"; eval "$(rbenv init -)"; rbenv versions --bare | grep -q "^3.3.0$"'; then
-            echo "Compiling Ruby 3.3.0..."
-            user_do bash -c 'export PATH="$HOME/.rbenv/bin:$PATH"; eval "$(rbenv init -)"; rbenv install 3.3.0 && rbenv global 3.3.0'
+            echo "Compiling Ruby 3.3.0 (this may take a few minutes)..."
+            # Optimization: Skip documentation and use parallel compilation
+            user_do bash -c 'export PATH="$HOME/.rbenv/bin:$PATH"; eval "$(rbenv init -)"; export RUBY_CONFIGURE_OPTS="--disable-install-doc"; export MAKE_OPTS="-j$(nproc 2>/dev/null || echo 2)"; rbenv install 3.3.0 && rbenv global 3.3.0'
         fi
 
         echo "Installing Rails..."

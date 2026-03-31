@@ -1,13 +1,13 @@
-# SetupVibe — Edición Server
+# SetupVibe — Edición Servidor
 
-> Configuración de servidor Linux — v0.37.0
+> Configuración de servidor Linux — v0.39.0
 
-Un script de configuración ligero y enfocado para servidores Linux. Sin Homebrew, sin ecosistemas de lenguajes, sin herramientas de escritorio. Instala solo lo que un servidor de producción necesita: Docker, Ansible, red, shell, tmux y herramientas de IA vía CLI.
+Un script de configuración ligero y enfocado para servidores Linux. Sin Homebrew, sin ecosistemas de lenguajes, sin herramientas de escritorio. Instala solo lo que un servidor de producción necesita: Docker, Ansible, redes, shell, tmux y herramientas AI CLI.
 
 ## Requisitos del Sistema
 
-|                    | Soportado                       |
-| ------------------ | ------------------------------- |
+|                   | Soportado                       |
+| ----------------- | ------------------------------- |
 | **Ubuntu**         | 24.04+                          |
 | **Debian**         | 12+                             |
 | **Zorin OS**       | 18+                             |

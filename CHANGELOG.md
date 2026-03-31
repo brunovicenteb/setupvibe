@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [v0.39.0] - 2026-03-31
+
+### Added
+
+- Automation for version bumping and consistency across documentation and scripts
+
+---
+
 ## [v0.38.0] - 2026-03-29
 
 ### Added
