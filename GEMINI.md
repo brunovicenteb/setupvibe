@@ -54,8 +54,10 @@ The version number is defined at the top of both `desktop.sh` and `server.sh`. *
 - `desktop.sh` (version variable)
 - `server.sh` (version variable)
 - `CHANGELOG.md` (new entry)
+- `README.md` (root project overview)
 - `GEMINI.md` (project overview)
 - `CLAUDE.md` (project overview)
+- All `README.md` files in the `docs/` directory and its subfolders.
 - Any other documentation referring to the current version.
 
 ## Development Conventions
