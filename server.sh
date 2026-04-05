@@ -654,7 +654,6 @@ step_7() {
     AI_TOOLS=(
         "@anthropic-ai/claude-code"
         "@google/gemini-cli"
-        "@gsd-build/cli"
         "@openai/codex"
         "@githubnext/github-copilot-cli"
     )

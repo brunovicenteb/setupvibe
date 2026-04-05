@@ -316,9 +316,11 @@ install_key() {
 brew_cmd() {
     if [[ "$(id -u)" -eq 0 && -n "$REAL_USER" && "$REAL_USER" != "root" ]]; then
         # Use runuser; cd to user home first (runuser inherits CWD and /root is not readable by others)
-        ( cd "$REAL_HOME" && runuser -u "$REAL_USER" -- env HOME="$REAL_HOME" "$BREW_PREFIX/bin/brew" "$@" )
+        # Redirect stdin from /dev/null to prevent brew from consuming the script when run via curl|bash
+        ( cd "$REAL_HOME" && runuser -u "$REAL_USER" -- env HOME="$REAL_HOME" "$BREW_PREFIX/bin/brew" "$@" < /dev/null )
     else
-        "$BREW_PREFIX/bin/brew" "$@"
+        # Redirect stdin from /dev/null to prevent brew from consuming the script when run via curl|bash
+        "$BREW_PREFIX/bin/brew" "$@" < /dev/null
     fi
 }
 
@@ -1122,7 +1124,6 @@ step_13() {
         "agentlytics"
         "@anthropic-ai/claude-code"
         "@google/gemini-cli"
-        "@gsd-build/cli"
         "@openai/codex"
         "@githubnext/github-copilot-cli"
     )
