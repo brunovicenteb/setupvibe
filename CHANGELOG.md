@@ -2,8 +2,6 @@
 
 All notable changes to **SetupVibe** are documented in this file.
 
-Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
-
 ---
 
 ## [v0.41.6] - 2026-04-05
