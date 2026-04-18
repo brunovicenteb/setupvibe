@@ -4,6 +4,14 @@ All notable changes to **SetupVibe** are documented in this file.
 
 ---
 
+## [v0.41.9] - 2026-04-18
+
+### Fixed
+
+- **.NET roadmap label:** Improved detection of an existing `dotnet` installation for the interactive roadmap and final summary (try `/usr/bin/dotnet`, `/usr/share/dotnet/dotnet`, and `~/.dotnet/dotnet`; use `bash -c` with `PATH` including `snap/bin` instead of relying on `bash -l`).
+
+---
+
 ## [v0.41.8] - 2026-04-18
 
 ### Changed

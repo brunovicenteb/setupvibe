@@ -25,7 +25,7 @@ NC='\033[0m' # No Color
 
 
 # --- VERSION ---
-VERSION="0.41.8"
+VERSION="0.41.9"
 INSTALL_URL="https://desktop.setupvibe.dev"
 
 # --- ARGUMENT PARSING ---
@@ -1327,11 +1327,16 @@ update_steps_dotnet_labels() {
         return
     fi
     local dver=""
-    if [[ -x "$REAL_HOME/.dotnet/dotnet" ]]; then
-        dver=$(user_do env HOME="$REAL_HOME" PATH="$REAL_HOME/.dotnet:${PATH}" "$REAL_HOME/.dotnet/dotnet" --version 2>/dev/null | head -1 | tr -d '\r' || true)
-    fi
-    if [[ -z "$dver" ]] && user_do bash -lc 'export PATH="$HOME/.dotnet:/usr/local/bin:/usr/bin:$PATH"; command -v dotnet' &>/dev/null; then
-        dver=$(user_do bash -lc 'export PATH="$HOME/.dotnet:/usr/local/bin:/usr/bin:$PATH"; dotnet --version 2>/dev/null' | head -1 | tr -d '\r' || true)
+    local cand
+    # Try common paths (dotnet-install ~/.dotnet, Microsoft APT /usr/bin, shared root)
+    for cand in "$REAL_HOME/.dotnet/dotnet" "/usr/bin/dotnet" "/usr/share/dotnet/dotnet"; do
+        [[ -e "$cand" ]] || continue
+        dver=$(user_do env HOME="$REAL_HOME" PATH="$(dirname "$cand"):/usr/local/bin:/usr/bin:${PATH}" "$cand" --version 2>/dev/null | head -1 | tr -d '\r' || true)
+        [[ -n "$dver" ]] && break
+    done
+    # Non-login shell with PATH typical for dotnet-install, snap, and package installs
+    if [[ -z "$dver" ]]; then
+        dver=$(user_do bash -c 'export PATH="$HOME/.dotnet:/snap/bin:/usr/local/bin:/usr/bin:$PATH"; command -v dotnet >/dev/null 2>&1 && dotnet --version' 2>/dev/null | head -1 | tr -d '\r' || true)
     fi
     if [[ -z "$dver" ]] && command -v dotnet &>/dev/null; then
         dver=$(dotnet --version 2>/dev/null | head -1 | tr -d '\r' || true)
