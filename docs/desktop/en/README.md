@@ -1,6 +1,6 @@
 # SetupVibe — Desktop Edition
 
-> Cross-platform development environment setup — v0.41.6
+> Cross-platform development environment setup — v0.41.7
 
 Installs and configures a complete developer stack in one command. Supports macOS and major Linux distributions.
 
@@ -27,6 +27,14 @@ Or locally:
 
 ```bash
 bash desktop.sh
+```
+
+Optional **.NET SDK** (default **.NET 10**; supported majors `8`, `9`, `10`):
+
+```bash
+curl -sSL desktop.setupvibe.dev | bash -s -- --install-dotnet
+curl -sSL desktop.setupvibe.dev | bash -s -- --install-dotnet=8
+bash desktop.sh --install-dotnet=10
 ```
 
 The script shows an interactive roadmap and asks for confirmation before starting. It also prompts to configure Git identity if not already set.

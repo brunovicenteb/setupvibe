@@ -1,6 +1,6 @@
 # SetupVibe — Edición Servidor
 
-> Configuración de servidor Linux — v0.41.6
+> Configuración de servidor Linux — v0.41.7
 
 Un script de configuración ligero y enfocado para servidores Linux. Sin Homebrew, sin ecosistemas de lenguajes, sin herramientas de escritorio. Instala solo lo que un servidor de producción necesita: Docker, Ansible, redes, shell, tmux y herramientas AI CLI.
 
@@ -36,6 +36,15 @@ curl -sSL server.setupvibe.dev | bash -s -- --manager
 
 ```bash
 bash server.sh --manager
+```
+
+**.NET SDK** opcional (predeterminado **.NET 10**; compatible con `--manager`):
+
+```bash
+curl -sSL server.setupvibe.dev | bash -s -- --install-dotnet
+curl -sSL server.setupvibe.dev | bash -s -- --install-dotnet=8
+curl -sSL server.setupvibe.dev | bash -s -- --manager --install-dotnet
+bash server.sh --install-dotnet=10
 ```
 
 El script espera a que se libere cualquier bloqueo de APT (útil en máquinas virtuales recién creadas donde `unattended-upgrades` se ejecuta al arrancar), muestra una hoja de ruta interactiva y luego solicita confirmación. También propone configurar la identidad de Git si aún no está definida. Al final de la instalación, si no se pasó `--manager`, el script preguntará interactivamente si se desea configurar la máquina como Manager de Docker Swarm.

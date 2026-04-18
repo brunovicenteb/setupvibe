@@ -26,19 +26,41 @@ NC='\033[0m' # No Color
 
 
 # --- VERSION ---
-VERSION="0.41.6"
+VERSION="0.41.7"
 INSTALL_URL="https://server.setupvibe.dev"
 
 # --- ARGUMENT PARSING ---
 SWARM_MANAGER=false
+INSTALL_DOTNET=false
+DOTNET_MAJOR=""
 for arg in "$@"; do
     case "$arg" in
         --manager) SWARM_MANAGER=true ;;
+        --install-dotnet)
+            INSTALL_DOTNET=true
+            DOTNET_MAJOR="10"
+            ;;
+        --install-dotnet=*)
+            INSTALL_DOTNET=true
+            DOTNET_MAJOR="${arg#*=}"
+            ;;
     esac
 done
+if $INSTALL_DOTNET; then
+    case "$DOTNET_MAJOR" in
+        8|9|10) ;;
+        *)
+            echo -e "${RED}Error: --install-dotnet requires major version 8, 9, or 10 (e.g. --install-dotnet=9).${NC}"
+            exit 1
+            ;;
+    esac
+fi
 
 echo -e "${CYAN}SetupVibe Server Edition v${VERSION}${NC}"
 [[ "$SWARM_MANAGER" == "true" ]] && echo -e "${YELLOW}  → Docker Swarm Manager mode enabled${NC}"
+if $INSTALL_DOTNET; then
+    echo -e "${YELLOW}  → .NET SDK ${DOTNET_MAJOR}.x install requested${NC}"
+fi
 echo ""
 
 # --- ENVIRONMENT ---
@@ -114,7 +136,7 @@ sys_do mkdir -p -m 755 /etc/apt/keyrings
 
 # Remove third-party repos managed by this script to ensure we start from a clean state
 # This prevents the signature verification error if the keys were deleted but the lists remained
-sys_do grep -rl 'docker\|nodesource\|charm\.sh\|cli\.github\|ansible\|codeiumdata\|windsurf\|antigravity\|pkg\.dev' \
+sys_do grep -rl 'docker\|nodesource\|charm\.sh\|cli\.github\|ansible\|codeiumdata\|windsurf\|antigravity\|pkg\.dev\|packages\.microsoft' \
     /etc/apt/sources.list.d/ 2>/dev/null | xargs -I {} sys_do rm -f "{}" 2>/dev/null || true
 
 # Clean APT cache if we are root
@@ -261,6 +283,74 @@ install_key() {
     fi
     echo -e "${RED}✘ Failed to install key from $url${NC}"
     return 1
+}
+
+_install_dotnet_via_install_script() {
+    local inst_dir="$REAL_HOME/.dotnet"
+    echo -e "${YELLOW}Installing .NET SDK via dotnet-install.sh (channel ${DOTNET_MAJOR}.0) → $inst_dir${NC}"
+    user_do mkdir -p "$inst_dir"
+    local script
+    script=$(mktemp /tmp/dotnet-install.XXXXXX.sh)
+    if ! curl -fsSL "https://dot.net/v1/dotnet-install.sh" -o "$script"; then
+        echo -e "${RED}✘ Failed to download dotnet-install.sh${NC}"
+        rm -f "$script"
+        return 1
+    fi
+    chmod +x "$script"
+    if user_do bash "$script" --channel "${DOTNET_MAJOR}.0" --install-dir "$inst_dir"; then
+        rm -f "$script"
+        if user_do test -x "$inst_dir/dotnet"; then
+            echo -e "${GREEN}✔ .NET SDK installed to $inst_dir${NC}"
+            return 0
+        fi
+    fi
+    rm -f "$script"
+    echo -e "${RED}✘ .NET SDK installation failed.${NC}"
+    return 1
+}
+
+install_dotnet_sdk() {
+    echo ""
+    echo -e "${BLUE}========================================================${NC}"
+    echo -e "${BOLD}▶ .NET SDK (${DOTNET_MAJOR}.x)${NC}"
+    echo -e "${BLUE}========================================================${NC}"
+    local sdk_pkg="dotnet-sdk-${DOTNET_MAJOR}.0"
+
+    if $IS_UBUNTU || $IS_DEBIAN; then
+        local msdeb=""
+        local ubver=""
+        local dver=""
+        if $IS_UBUNTU; then
+            ubver=$(lsb_release -rs 2>/dev/null)
+            [[ -n "$ubver" ]] && msdeb="https://packages.microsoft.com/config/ubuntu/${ubver}/packages-microsoft-prod.deb"
+        else
+            dver=$(grep -E '^VERSION_ID=' /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"')
+            [[ -n "$dver" ]] && msdeb="https://packages.microsoft.com/config/debian/${dver}/packages-microsoft-prod.deb"
+        fi
+
+        if [[ -n "$msdeb" ]]; then
+            local tmpdeb
+            tmpdeb=$(mktemp /tmp/msprodXXXXXX.deb)
+            echo -e "${YELLOW}Adding Microsoft package repository...${NC}"
+            if curl -fsSL "$msdeb" -o "$tmpdeb" && sys_do dpkg -i "$tmpdeb"; then
+                rm -f "$tmpdeb"
+                sys_do apt-get install -f -y -qq 2>/dev/null || true
+                sys_do apt-get update -qq
+                if sys_do apt-get install -y "$sdk_pkg"; then
+                    echo -e "${GREEN}✔ .NET SDK installed via APT (${sdk_pkg}).${NC}"
+                    command -v dotnet >/dev/null 2>&1 && user_do dotnet --version
+                    return 0
+                fi
+            else
+                rm -f "$tmpdeb"
+            fi
+            echo -e "${YELLOW}⚠ APT install failed or package unavailable — trying dotnet-install.sh...${NC}"
+        fi
+    else
+        echo -e "${YELLOW}⚠ Non-Debian/Ubuntu Linux — using dotnet-install.sh...${NC}"
+    fi
+
+    _install_dotnet_via_install_script
 }
 
 header() {
@@ -636,6 +726,10 @@ step_6() {
 
 
 step_7() {
+    if $INSTALL_DOTNET; then
+        install_dotnet_sdk || echo -e "${YELLOW}⚠ .NET SDK step finished with warnings.${NC}"
+    fi
+
     echo "Installing Node.js 24 via NodeSource..."
     install_key "https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key" "/etc/apt/keyrings/nodesource.gpg"
     echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_24.x nodistro main" | sys_do tee /etc/apt/sources.list.d/nodesource.list

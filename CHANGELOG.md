@@ -4,6 +4,15 @@ All notable changes to **SetupVibe** are documented in this file.
 
 ---
 
+## [v0.41.7] - 2026-04-18
+
+### Added
+
+- Optional **.NET SDK** installation via `--install-dotnet` (defaults to **.NET 10** LTS channel) and `--install-dotnet=8|9|10` on both **Desktop** and **Server** editions. Linux uses the Microsoft APT repository when available, with fallback to the official `dotnet-install.sh` script; macOS (Desktop) uses `dotnet-install.sh` under `~/.dotnet`.
+- Shell PATH support for user-local .NET (`DOTNET_ROOT`, `~/.dotnet`, `~/.dotnet/tools`) in `conf/zshrc-*.zsh` when `~/.dotnet` exists.
+
+---
+
 ## [v0.41.6] - 2026-04-05
 
 ### Added
